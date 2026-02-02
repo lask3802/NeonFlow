@@ -34,6 +34,66 @@
         font-size: 28px;
         margin-bottom: 12px;
       }
+
+      #speed-control {
+        margin-top: 8px;
+        font-size: 12px;
+        letter-spacing: 1px;
+      }
+
+      #speed-control label {
+        display: block;
+        margin-bottom: 6px;
+      }
+
+      #speed-control input[type="range"] {
+        width: 160px;
+      }
+
+      #speed-value {
+        margin-top: 6px;
+        font-size: 13px;
+      }
+
+      #speed-hint {
+        margin-top: 4px;
+        font-size: 10px;
+        letter-spacing: 2px;
+        opacity: 0.7;
+      }
+
+      #focus-hud {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        font-size: 24px;
+        letter-spacing: 4px;
+        pointer-events: none;
+        z-index: 9;
+      }
+
+      #focus-hud .combo {
+        margin-top: 8px;
+        font-size: 18px;
+        letter-spacing: 3px;
+      }
+
+      #focus-hud.state-perfect {
+        color: #ffffff;
+        text-shadow: 0 0 16px rgba(255, 255, 255, 0.9);
+      }
+
+      #focus-hud.state-good {
+        color: #66ffcc;
+        text-shadow: 0 0 16px rgba(0, 255, 255, 0.8);
+      }
+
+      #focus-hud.state-bad {
+        color: #ff6677;
+        text-shadow: 0 0 16px rgba(255, 0, 128, 0.8);
+      }
     </style>
   </head>
   <body>
@@ -42,6 +102,27 @@
       <div id="score" class="value">0</div>
       <div>COMBO</div>
       <div id="combo" class="value">0</div>
+      <div id="speed-control">
+        <label for="speed">SPEED</label>
+        <input
+          id="speed"
+          type="range"
+          min="0.01"
+          max="0.06"
+          step="0.01"
+          aria-label="Speed"
+          aria-valuemin="0.01"
+          aria-valuemax="0.06"
+          aria-describedby="speed-hint"
+        />
+        <div id="speed-value"></div>
+        <div id="speed-hint">TUNNEL SPEED</div>
+      </div>
+    </div>
+
+    <div id="focus-hud">
+      <div id="judgement">READY</div>
+      <div id="focus-combo" class="combo">x0</div>
     </div>
 
     <script type="module">
@@ -147,6 +228,11 @@
 
       const scoreEl = document.getElementById("score");
       const comboEl = document.getElementById("combo");
+      const judgementEl = document.getElementById("judgement");
+      const focusComboEl = document.getElementById("focus-combo");
+      const focusHudEl = document.getElementById("focus-hud");
+      const speedInputEl = document.getElementById("speed");
+      const speedValueEl = document.getElementById("speed-value");
 
       const targetInput = new THREE.Vector2();
       const smoothedInput = new THREE.Vector2();
@@ -185,13 +271,27 @@
       const lookAheadDistance = 50;
       const playerForward = 4;
       const baseFov = 75;
-      const speed = 0.035;
+      const defaultSpeed = 0.02;
+      let speed = defaultSpeed;
       const maxDelta = 0.05; // Cap at 0.05s (50ms) to avoid big jumps after tab inactivity.
       const inputSmoothing = 0.08;
       const fovSmoothing = 0.08;
       const comboStep = 0.15;
       const perfectScoreRate = 600;
       const goodScoreRate = 120;
+
+      const setSpeed = (value) => {
+        speed = value;
+        speedValueEl.textContent = speed.toFixed(3);
+        speedInputEl.setAttribute("aria-valuenow", speed.toFixed(3));
+      };
+
+      speedInputEl.value = defaultSpeed.toString();
+      setSpeed(defaultSpeed);
+      speedInputEl.addEventListener("input", (event) => {
+        const nextValue = parseFloat(event.target.value);
+        setSpeed(nextValue);
+      });
 
       const updateStars = (delta) => {
         if (delta <= 0) {
@@ -235,6 +335,8 @@
         let trailScale = 1;
         let trailOpacity = 0.5;
         let shakeIntensity = 0;
+        let judgement = "READY";
+        let judgementClass = "";
 
         if (distanceFromCenter < perfectThreshold) {
           playerMaterial.color.setHex(0xffffff);
@@ -245,6 +347,8 @@
           targetFov = 90;
           score += perfectScoreRate * delta;
           comboTimer += delta;
+          judgement = "PERFECT";
+          judgementClass = "state-perfect";
           if (comboTimer >= comboStep) {
             const comboSteps = Math.floor(comboTimer / comboStep);
             combo += comboSteps;
@@ -259,6 +363,8 @@
           targetFov = 78;
           score += goodScoreRate * delta;
           comboTimer = 0;
+          judgement = "GOOD";
+          judgementClass = "state-good";
         } else {
           playerMaterial.color.setHex(0xff3344);
           tunnelOpacity = 0.3;
@@ -268,6 +374,8 @@
           combo = 0;
           comboTimer = 0;
           shakeIntensity = 0.12;
+          judgement = "BAD";
+          judgementClass = "state-bad";
         }
 
         tunnelMaterial.color.setHex(tunnelColor);
@@ -311,6 +419,9 @@
 
         scoreEl.textContent = Math.floor(score).toString();
         comboEl.textContent = combo.toString();
+        judgementEl.textContent = judgement;
+        focusComboEl.textContent = `x${combo}`;
+        focusHudEl.className = judgementClass;
 
         renderer.render(scene, camera);
         requestAnimationFrame(animate);
