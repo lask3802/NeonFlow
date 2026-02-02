@@ -20,6 +20,19 @@
 
 ---
 
+## 快速啟動 (Prototype)
+
+* 確認 `index.html` 與 `three.module.js` 位於同一資料夾（Three.js r160 的 `build/three.module.js`）。
+* 使用本地伺服器開啟，例如：`python3 -m http.server`
+* 在瀏覽器中進入：`http://localhost:8000/index.html`
+
+---
+
+## GitHub Pages 部署 (CI/CD)
+
+* 透過 GitHub Actions 自動部署到 GitHub Pages（`main` 分支 push 後觸發）。
+* 第一次啟用時，請在 GitHub 專案設定中開啟 Pages 並選擇 **GitHub Actions**。
+
 ## 2. 核心遊戲機制 (Core Mechanics)
 
 ### 2.1 玩家移動 (Player Movement)
