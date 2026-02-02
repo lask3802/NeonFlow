@@ -186,6 +186,10 @@
       const playerForward = 4;
       const baseFov = 75;
       const speed = 0.035;
+      const maxDelta = 0.05; // Prevent large jumps after tab inactivity.
+      const inputSmoothing = 0.08;
+      const fovSmoothing = 0.08;
+      const comboStep = 0.15;
 
       const updateStars = (delta) => {
         if (delta <= 0) {
@@ -203,7 +207,7 @@
       };
 
       const animate = () => {
-        const delta = Math.min(clock.getDelta(), 0.05);
+        const delta = Math.min(clock.getDelta(), maxDelta);
         progress = (progress + speed * delta) % 1;
 
         const frameIndex = Math.min(
@@ -219,7 +223,7 @@
           (progress + lookAheadDistance / curveLength) % 1;
         const lookAhead = curve.getPointAt(lookAheadT);
 
-        smoothedInput.lerp(targetInput, 0.08);
+        smoothedInput.lerp(targetInput, inputSmoothing);
         const offset = smoothedInput.clone().multiplyScalar(maxOffset);
         const distanceFromCenter = offset.length();
 
@@ -239,7 +243,6 @@
           targetFov = 90;
           score += 600 * delta;
           comboTimer += delta;
-          const comboStep = 0.15;
           if (comboTimer >= comboStep) {
             const comboSteps = Math.floor(comboTimer / comboStep);
             combo += comboSteps;
@@ -271,7 +274,7 @@
         trailMaterial.opacity = trailOpacity;
 
         if (Math.abs(camera.fov - targetFov) > 0.01) {
-          camera.fov = THREE.MathUtils.lerp(camera.fov, targetFov, 0.08);
+          camera.fov = THREE.MathUtils.lerp(camera.fov, targetFov, fovSmoothing);
           camera.updateProjectionMatrix();
         }
 
