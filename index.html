@@ -4,100 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Neon Flow</title>
-    <style>
-      html,
-      body {
-        margin: 0;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        background: #000000;
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      }
-
-      canvas {
-        display: block;
-      }
-
-      #hud {
-        position: fixed;
-        top: 20px;
-        left: 20px;
-        color: #ffffff;
-        font-size: 14px;
-        letter-spacing: 2px;
-        text-shadow: 0 0 12px rgba(0, 255, 255, 0.7);
-        z-index: 10;
-      }
-
-      #hud .value {
-        font-size: 28px;
-        margin-bottom: 12px;
-      }
-
-      #speed-control {
-        margin-top: 8px;
-        font-size: 12px;
-        letter-spacing: 1px;
-      }
-
-      #speed-control label {
-        display: block;
-        margin-bottom: 6px;
-      }
-
-      #speed-control input[type="range"] {
-        width: 160px;
-      }
-
-      #speed-value {
-        margin-top: 6px;
-        font-size: 13px;
-      }
-
-      #speed-hint {
-        margin-top: 4px;
-        font-size: 10px;
-        letter-spacing: 2px;
-        opacity: 0.7;
-      }
-
-      #focus-hud {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        text-align: center;
-        font-size: 24px;
-        letter-spacing: 4px;
-        pointer-events: none;
-        z-index: 9;
-      }
-
-      #focus-hud .combo {
-        margin-top: 8px;
-        font-size: 18px;
-        letter-spacing: 3px;
-      }
-
-      #focus-hud.state-perfect {
-        color: #ffffff;
-        text-shadow: 0 0 16px rgba(255, 255, 255, 0.9);
-      }
-
-      #focus-hud.state-good {
-        color: #66ffcc;
-        text-shadow: 0 0 16px rgba(0, 255, 255, 0.8);
-      }
-
-      #focus-hud.state-bad {
-        color: #ff6677;
-        text-shadow: 0 0 16px rgba(255, 0, 128, 0.8);
-      }
-    </style>
+    <link rel="stylesheet" href="./styles/main.css" />
   </head>
   <body>
-    <div id="hud">
+    <div id="hud" class="is-hidden">
       <div>SCORE</div>
       <div id="score" class="value">0</div>
       <div>COMBO</div>
@@ -107,333 +17,49 @@
         <input
           id="speed"
           type="range"
-          min="0.01"
-          max="0.06"
-          step="0.01"
+          min="0.001"
+          max="0.02"
+          step="0.001"
           aria-label="Speed"
-          aria-valuemin="0.01"
-          aria-valuemax="0.06"
+          aria-valuemin="0.001"
+          aria-valuemax="0.02"
           aria-describedby="speed-hint"
         />
         <div id="speed-value"></div>
         <div id="speed-hint">TUNNEL SPEED</div>
       </div>
+      <div id="combo-goal">GOAL 500 COMBO</div>
     </div>
 
-    <div id="focus-hud">
+    <div id="focus-hud" class="is-hidden">
       <div id="judgement">READY</div>
       <div id="focus-combo" class="combo">x0</div>
     </div>
 
-    <script type="module">
-      import * as THREE from "./three.module.js";
+    <div id="start-screen" class="screen visible">
+      <div class="panel">
+        <div class="title">NEON FLOW</div>
+        <div class="subtitle">KEEP PERFECT TO PUSH SPEED</div>
+        <button id="start-button">START</button>
+      </div>
+    </div>
 
-      const scene = new THREE.Scene();
-      scene.fog = new THREE.FogExp2(0x05000f, 0.035);
+    <div id="summary-screen" class="screen">
+      <div class="panel">
+        <div class="title">RESULT</div>
+        <div class="subtitle">500 COMBO RUN COMPLETE</div>
+        <div class="summary-grid">
+          <div class="label">SCORE</div>
+          <div id="final-score">0</div>
+          <div class="label">MAX COMBO</div>
+          <div id="final-combo">0</div>
+          <div class="label">FINAL SPEED</div>
+          <div id="final-speed">0.000</div>
+        </div>
+        <button id="restart-button">PLAY AGAIN</button>
+      </div>
+    </div>
 
-      const camera = new THREE.PerspectiveCamera(
-        75,
-        window.innerWidth / window.innerHeight,
-        0.1,
-        2000
-      );
-
-      const renderer = new THREE.WebGLRenderer({ antialias: true });
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-      document.body.appendChild(renderer.domElement);
-
-      scene.add(camera);
-
-      const ambient = new THREE.AmbientLight(0xffffff, 1.2);
-      scene.add(ambient);
-
-      const tunnelPoints = [];
-      const segmentLength = 18;
-      const pointCount = 220;
-      for (let i = 0; i < pointCount; i += 1) {
-        tunnelPoints.push(
-          new THREE.Vector3(
-            (Math.random() - 0.5) * 24,
-            (Math.random() - 0.5) * 24,
-            -i * segmentLength
-          )
-        );
-      }
-
-      const curve = new THREE.CatmullRomCurve3(tunnelPoints);
-      const tubularSegments = 2200;
-      const curveLength = curve.getLength();
-      const frames = curve.computeFrenetFrames(tubularSegments, false);
-
-      const tunnelGeometry = new THREE.TubeGeometry(
-        curve,
-        tubularSegments,
-        5,
-        16,
-        false
-      );
-      const tunnelMaterial = new THREE.MeshBasicMaterial({
-        color: 0x00ffff,
-        wireframe: true,
-        transparent: true,
-        opacity: 0.4,
-      });
-      const tunnel = new THREE.Mesh(tunnelGeometry, tunnelMaterial);
-      scene.add(tunnel);
-
-      const playerGroup = new THREE.Group();
-      const playerMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
-      const playerMesh = new THREE.Mesh(
-        new THREE.SphereGeometry(0.4, 32, 32),
-        playerMaterial
-      );
-      playerGroup.add(playerMesh);
-
-      const trailMaterial = new THREE.MeshBasicMaterial({
-        color: 0x00ffff,
-        transparent: true,
-        opacity: 0.5,
-      });
-      const trailGeometry = new THREE.CylinderGeometry(0.08, 0.25, 3, 10, 1, true);
-      trailGeometry.rotateX(Math.PI / 2);
-      const trailMesh = new THREE.Mesh(trailGeometry, trailMaterial);
-      trailMesh.position.z = -1.6;
-      playerGroup.add(trailMesh);
-      scene.add(playerGroup);
-
-      const starCount = 500;
-      const starDepth = 220;
-      const starRadius = 20;
-      const starPositions = new Float32Array(starCount * 3);
-      for (let i = 0; i < starCount; i += 1) {
-        const i3 = i * 3;
-        starPositions[i3] = (Math.random() - 0.5) * starRadius * 2;
-        starPositions[i3 + 1] = (Math.random() - 0.5) * starRadius * 2;
-        starPositions[i3 + 2] = -Math.random() * starDepth;
-      }
-      const starGeometry = new THREE.BufferGeometry();
-      starGeometry.setAttribute(
-        "position",
-        new THREE.BufferAttribute(starPositions, 3)
-      );
-      const starMaterial = new THREE.PointsMaterial({
-        color: 0xffffff,
-        size: 0.3,
-        transparent: true,
-        opacity: 0.8,
-      });
-      const stars = new THREE.Points(starGeometry, starMaterial);
-      camera.add(stars);
-
-      const scoreEl = document.getElementById("score");
-      const comboEl = document.getElementById("combo");
-      const judgementEl = document.getElementById("judgement");
-      const focusComboEl = document.getElementById("focus-combo");
-      const focusHudEl = document.getElementById("focus-hud");
-      const speedInputEl = document.getElementById("speed");
-      const speedValueEl = document.getElementById("speed-value");
-
-      const targetInput = new THREE.Vector2();
-      const smoothedInput = new THREE.Vector2();
-      const maxOffset = 2.4;
-
-      const handlePointer = (clientX, clientY) => {
-        const x = (clientX / window.innerWidth) * 2 - 1;
-        const y = -(clientY / window.innerHeight) * 2 + 1;
-        targetInput.set(x, y);
-      };
-
-      window.addEventListener("mousemove", (event) => {
-        handlePointer(event.clientX, event.clientY);
-      });
-
-      window.addEventListener(
-        "touchmove",
-        (event) => {
-          if (event.touches.length > 0) {
-            handlePointer(event.touches[0].clientX, event.touches[0].clientY);
-          }
-        },
-        { passive: true }
-      );
-
-      let progress = 0;
-      let score = 0;
-      let combo = 0;
-      let comboTimer = 0;
-      const clock = new THREE.Clock();
-      const smoothedUp = new THREE.Vector3(0, 1, 0);
-
-      const perfectThreshold = 0.6;
-      const goodThreshold = 1.6;
-      const cameraDistance = 8;
-      const lookAheadDistance = 50;
-      const playerForward = 4;
-      const baseFov = 75;
-      const defaultSpeed = 0.02;
-      let speed = defaultSpeed;
-      const maxDelta = 0.05; // Cap at 0.05s (50ms) to avoid big jumps after tab inactivity.
-      const inputSmoothing = 0.08;
-      const fovSmoothing = 0.08;
-      const comboStep = 0.15;
-      const perfectScoreRate = 600;
-      const goodScoreRate = 120;
-
-      const setSpeed = (value) => {
-        speed = value;
-        speedValueEl.textContent = speed.toFixed(3);
-        speedInputEl.setAttribute("aria-valuenow", speed.toFixed(3));
-      };
-
-      speedInputEl.value = defaultSpeed.toString();
-      setSpeed(defaultSpeed);
-      speedInputEl.addEventListener("input", (event) => {
-        const nextValue = parseFloat(event.target.value);
-        setSpeed(nextValue);
-      });
-
-      const updateStars = (delta) => {
-        if (delta <= 0) {
-          return;
-        }
-        const positions = starGeometry.attributes.position.array;
-        for (let i = 0; i < starCount; i += 1) {
-          const i3 = i * 3;
-          positions[i3 + 2] += delta * 60;
-          if (positions[i3 + 2] > 2) {
-            positions[i3 + 2] = -starDepth;
-          }
-        }
-        starGeometry.attributes.position.needsUpdate = true;
-      };
-
-      const animate = () => {
-        const delta = Math.min(clock.getDelta(), maxDelta);
-        progress = (progress + speed * delta) % 1;
-
-        const frameIndex = Math.min(
-          frames.tangents.length - 1,
-          Math.floor(progress * tubularSegments)
-        );
-        const position = curve.getPointAt(progress);
-        const tangent = frames.tangents[frameIndex].clone();
-        const normal = frames.normals[frameIndex].clone();
-        const binormal = frames.binormals[frameIndex].clone();
-
-        const lookAheadT =
-          (progress + lookAheadDistance / curveLength) % 1;
-        const lookAhead = curve.getPointAt(lookAheadT);
-
-        smoothedInput.lerp(targetInput, inputSmoothing);
-        const offset = smoothedInput.clone().multiplyScalar(maxOffset);
-        const distanceFromCenter = offset.length();
-
-        let targetFov = baseFov;
-        let tunnelOpacity = 0.4;
-        let tunnelColor = 0x00ffff;
-        let trailScale = 1;
-        let trailOpacity = 0.5;
-        let shakeIntensity = 0;
-        let judgement = "READY";
-        let judgementClass = "";
-
-        if (distanceFromCenter < perfectThreshold) {
-          playerMaterial.color.setHex(0xffffff);
-          tunnelColor = 0xffffff;
-          tunnelOpacity = 0.7;
-          trailScale = 2.1;
-          trailOpacity = 0.8;
-          targetFov = 90;
-          score += perfectScoreRate * delta;
-          comboTimer += delta;
-          judgement = "PERFECT";
-          judgementClass = "state-perfect";
-          if (comboTimer >= comboStep) {
-            const comboSteps = Math.floor(comboTimer / comboStep);
-            combo += comboSteps;
-            comboTimer -= comboSteps * comboStep;
-          }
-        } else if (distanceFromCenter < goodThreshold) {
-          playerMaterial.color.setHex(0xffcc66);
-          tunnelOpacity = 0.5;
-          tunnelColor = 0x00ffff;
-          trailScale = 1.3;
-          trailOpacity = 0.55;
-          targetFov = 78;
-          score += goodScoreRate * delta;
-          comboTimer = 0;
-          judgement = "GOOD";
-          judgementClass = "state-good";
-        } else {
-          playerMaterial.color.setHex(0xff3344);
-          tunnelOpacity = 0.3;
-          tunnelColor = 0x8844ff;
-          trailScale = 0.9;
-          trailOpacity = 0.3;
-          combo = 0;
-          comboTimer = 0;
-          shakeIntensity = 0.12;
-          judgement = "BAD";
-          judgementClass = "state-bad";
-        }
-
-        tunnelMaterial.color.setHex(tunnelColor);
-        tunnelMaterial.opacity = tunnelOpacity;
-        trailMesh.scale.set(1, 1, trailScale);
-        trailMaterial.opacity = trailOpacity;
-
-        if (Math.abs(camera.fov - targetFov) > 0.01) {
-          camera.fov = THREE.MathUtils.lerp(camera.fov, targetFov, fovSmoothing);
-          camera.updateProjectionMatrix();
-        }
-
-        const cameraPosition = position
-          .clone()
-          .add(tangent.clone().multiplyScalar(-cameraDistance));
-        if (shakeIntensity > 0) {
-          cameraPosition.add(
-            normal.clone().multiplyScalar((Math.random() - 0.5) * shakeIntensity)
-          );
-          cameraPosition.add(
-            binormal
-              .clone()
-              .multiplyScalar((Math.random() - 0.5) * shakeIntensity)
-          );
-        }
-        camera.position.copy(cameraPosition);
-
-        smoothedUp.lerp(binormal, 0.05).normalize();
-        camera.up.copy(smoothedUp);
-        camera.lookAt(lookAhead);
-
-        const playerPosition = position
-          .clone()
-          .add(tangent.clone().multiplyScalar(playerForward))
-          .add(normal.clone().multiplyScalar(offset.x))
-          .add(binormal.clone().multiplyScalar(offset.y));
-        playerGroup.position.copy(playerPosition);
-        playerGroup.quaternion.copy(camera.quaternion);
-
-        updateStars(delta);
-
-        scoreEl.textContent = Math.floor(score).toString();
-        comboEl.textContent = combo.toString();
-        judgementEl.textContent = judgement;
-        focusComboEl.textContent = `x${combo}`;
-        focusHudEl.className = judgementClass;
-
-        renderer.render(scene, camera);
-        requestAnimationFrame(animate);
-      };
-
-      animate();
-
-      window.addEventListener("resize", () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-      });
-    </script>
+    <script type="module" src="./src/main.js"></script>
   </body>
 </html>
