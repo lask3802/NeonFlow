@@ -55,6 +55,13 @@
         font-size: 13px;
       }
 
+      #speed-hint {
+        margin-top: 4px;
+        font-size: 10px;
+        letter-spacing: 2px;
+        opacity: 0.7;
+      }
+
       #focus-hud {
         position: fixed;
         top: 50%;
@@ -102,15 +109,19 @@
           type="range"
           min="0.01"
           max="0.06"
-          step="0.001"
-          value="0.018"
+          step="0.01"
+          aria-label="Speed"
+          aria-valuemin="0.01"
+          aria-valuemax="0.06"
+          aria-describedby="speed-hint"
         />
-        <div id="speed-value">0.018</div>
+        <div id="speed-value"></div>
+        <div id="speed-hint">TUNNEL SPEED</div>
       </div>
     </div>
 
-    <div id="focus-hud" class="state-good">
-      <div id="judgement">GOOD</div>
+    <div id="focus-hud">
+      <div id="judgement">READY</div>
       <div id="focus-combo" class="combo">x0</div>
     </div>
 
@@ -260,9 +271,7 @@
       const lookAheadDistance = 50;
       const playerForward = 4;
       const baseFov = 75;
-      const defaultSpeed = 0.018;
-      const minSpeed = 0.01;
-      const maxSpeed = 0.06;
+      const defaultSpeed = 0.02;
       let speed = defaultSpeed;
       const maxDelta = 0.05; // Cap at 0.05s (50ms) to avoid big jumps after tab inactivity.
       const inputSmoothing = 0.08;
@@ -271,15 +280,17 @@
       const perfectScoreRate = 600;
       const goodScoreRate = 120;
 
-      const updateSpeedValue = (value) => {
-        const clamped = Math.min(Math.max(value, minSpeed), maxSpeed);
-        speed = clamped;
-        speedValueEl.textContent = clamped.toFixed(3);
+      const setSpeed = (value) => {
+        speed = value;
+        speedValueEl.textContent = speed.toFixed(3);
+        speedInputEl.setAttribute("aria-valuenow", speed.toFixed(3));
       };
 
-      updateSpeedValue(defaultSpeed);
+      speedInputEl.value = defaultSpeed.toString();
+      setSpeed(defaultSpeed);
       speedInputEl.addEventListener("input", (event) => {
-        updateSpeedValue(parseFloat(event.target.value));
+        const nextValue = parseFloat(event.target.value);
+        setSpeed(nextValue);
       });
 
       const updateStars = (delta) => {
@@ -324,8 +335,8 @@
         let trailScale = 1;
         let trailOpacity = 0.5;
         let shakeIntensity = 0;
-        let judgement = "GOOD";
-        let judgementClass = "state-good";
+        let judgement = "READY";
+        let judgementClass = "";
 
         if (distanceFromCenter < perfectThreshold) {
           playerMaterial.color.setHex(0xffffff);
