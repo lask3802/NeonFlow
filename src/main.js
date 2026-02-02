@@ -310,8 +310,6 @@ const animate = () => {
     applyJudgementFeedback(judgement);
     if (judgement === "BAD") {
       game.registerBad();
-    } else if (judgement === "GOOD") {
-      game.registerGood();
     }
   }
 

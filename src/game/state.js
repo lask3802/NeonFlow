@@ -53,15 +53,11 @@ export const createGameState = ({
     setSpeed(state.speed - state.speedStep);
   };
 
-  const registerGood = () => {
-  };
-
   return {
     state,
     setSpeed,
     reset,
     registerPerfect,
-    registerGood,
     registerBad,
   };
 };
