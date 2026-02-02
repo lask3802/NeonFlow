@@ -28,6 +28,11 @@
 
 ---
 
+## GitHub Pages 部署 (CI/CD)
+
+* 透過 GitHub Actions 自動部署到 GitHub Pages（`main` 分支 push 後觸發）。
+* 第一次啟用時，請在 GitHub 專案設定中開啟 Pages 並選擇 **GitHub Actions**。
+
 ## 2. 核心遊戲機制 (Core Mechanics)
 
 ### 2.1 玩家移動 (Player Movement)
