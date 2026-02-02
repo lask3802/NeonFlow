@@ -175,6 +175,7 @@
       let progress = 0;
       let score = 0;
       let combo = 0;
+      let comboTimer = 0;
       const clock = new THREE.Clock();
       const smoothedUp = new THREE.Vector3(0, 1, 0);
 
@@ -187,6 +188,9 @@
       const speed = 0.035;
 
       const updateStars = (delta) => {
+        if (delta <= 0) {
+          return;
+        }
         const positions = starGeometry.attributes.position.array;
         for (let i = 0; i < starCount; i += 1) {
           const i3 = i * 3;
@@ -234,7 +238,13 @@
           trailOpacity = 0.8;
           targetFov = 90;
           score += 600 * delta;
-          combo += 1;
+          comboTimer += delta;
+          const comboStep = 0.15;
+          if (comboTimer >= comboStep) {
+            const comboSteps = Math.floor(comboTimer / comboStep);
+            combo += comboSteps;
+            comboTimer -= comboSteps * comboStep;
+          }
         } else if (distanceFromCenter < goodThreshold) {
           playerMaterial.color.setHex(0xffcc66);
           tunnelOpacity = 0.5;
@@ -243,6 +253,7 @@
           trailOpacity = 0.55;
           targetFov = 78;
           score += 120 * delta;
+          comboTimer = 0;
         } else {
           playerMaterial.color.setHex(0xff3344);
           tunnelOpacity = 0.3;
@@ -250,6 +261,7 @@
           trailScale = 0.9;
           trailOpacity = 0.3;
           combo = 0;
+          comboTimer = 0;
           shakeIntensity = 0.12;
         }
 
@@ -258,7 +270,7 @@
         trailMesh.scale.set(1, 1, trailScale);
         trailMaterial.opacity = trailOpacity;
 
-        if (camera.fov !== targetFov) {
+        if (Math.abs(camera.fov - targetFov) > 0.01) {
           camera.fov = THREE.MathUtils.lerp(camera.fov, targetFov, 0.08);
           camera.updateProjectionMatrix();
         }

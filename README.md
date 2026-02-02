@@ -20,6 +20,14 @@
 
 ---
 
+## 快速啟動 (Prototype)
+
+* 確認 `index.html` 與 `three.module.js` 位於同一資料夾。
+* 使用本地伺服器開啟，例如：`python -m http.server`
+* 在瀏覽器中進入：`http://localhost:8000/index.html`
+
+---
+
 ## 2. 核心遊戲機制 (Core Mechanics)
 
 ### 2.1 玩家移動 (Player Movement)
